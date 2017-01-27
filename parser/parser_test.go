@@ -1,13 +1,21 @@
-package postal
+package postal_test
 
 import (
 	"encoding/json"
 	"reflect"
 	"testing"
+
+	parser "github.com/openvenues/gopostal/parser"
 )
 
-func testParse(t *testing.T, address string, expectedOutput []ParsedComponent, expectedJSON string) {
-	parsedComponents := ParseAddress(address)
+func init() {
+	if err := parser.Setup(); err != nil {
+		panic(err)
+	}
+}
+
+func testParse(t *testing.T, address string, expectedOutput []parser.ParsedComponent, expectedJSON string) {
+	parsedComponents := parser.ParseAddress(address)
 
 	if len(parsedComponents) != len(expectedOutput) || !reflect.DeepEqual(parsedComponents, expectedOutput) {
 		t.Error("parsed != expected: ", parsedComponents, "!=", expectedOutput)
@@ -24,7 +32,7 @@ func testParse(t *testing.T, address string, expectedOutput []ParsedComponent, e
 	}
 
 	// Test JSON unmarshaling.
-	var unmarshaledComponents []ParsedComponent
+	var unmarshaledComponents []parser.ParsedComponent
 	if err := json.Unmarshal(marshaledJSON, &unmarshaledComponents); err != nil {
 		t.Error("JSON.unmarshal error: " + err.Error())
 	}
@@ -38,7 +46,7 @@ func TestParseUSAddress(t *testing.T) {
 	t.Log("Testing US address")
 
 	testParse(t, "781 Franklin Ave Crown Heights Brooklyn NYC NY 11216 USA",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house_number", "781"},
 			{"road", "franklin ave"},
 			{"suburb", "crown heights"},
@@ -52,7 +60,7 @@ func TestParseUSAddress(t *testing.T) {
 	)
 
 	testParse(t, "whole foods ny",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house", "whole foods"},
 			{"state", "ny"},
 		},
@@ -60,7 +68,7 @@ func TestParseUSAddress(t *testing.T) {
 	)
 
 	testParse(t, "1917/2 Pike Drive",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house_number", "1917 / 2"},
 			{"road", "pike drive"},
 		},
@@ -68,7 +76,7 @@ func TestParseUSAddress(t *testing.T) {
 	)
 
 	testParse(t, "3437 warwickshire rd,pa",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house_number", "3437"},
 			{"road", "warwickshire rd"},
 			{"state", "pa"},
@@ -77,7 +85,7 @@ func TestParseUSAddress(t *testing.T) {
 	)
 
 	testParse(t, "3437 warwickshire rd, pa",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house_number", "3437"},
 			{"road", "warwickshire rd"},
 			{"state", "pa"},
@@ -86,7 +94,7 @@ func TestParseUSAddress(t *testing.T) {
 	)
 
 	testParse(t, "3437 warwickshire rd pa",
-		[]ParsedComponent{
+		[]parser.ParsedComponent{
 			{"house_number", "3437"},
 			{"road", "warwickshire rd"},
 			{"state", "pa"},

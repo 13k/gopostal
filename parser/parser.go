@@ -8,30 +8,30 @@ package postal
 import "C"
 
 import (
-	"log"
+	"errors"
 	"unicode/utf8"
 	"unsafe"
 )
 
-func init() {
-	if !bool(C.libpostal_setup()) || !bool(C.libpostal_setup_parser()) {
-		log.Fatal("Could not load libpostal")
+var (
+	DefaultParserOptions = ParserOptions{
+		Language: "",
+		Country:  "",
 	}
+)
+
+func Setup() error {
+	if !bool(C.libpostal_setup()) || !bool(C.libpostal_setup_parser()) {
+		return errors.New("Could not load libpostal")
+	}
+
+	return nil
 }
 
 type ParserOptions struct {
 	Language string
 	Country  string
 }
-
-func getDefaultParserOptions() ParserOptions {
-	return ParserOptions{
-		Language: "",
-		Country:  "",
-	}
-}
-
-var parserDefaultOptions = getDefaultParserOptions()
 
 type ParsedComponent struct {
 	Label string `json:"label"`
@@ -53,14 +53,12 @@ func ParseAddressOptions(address string, options ParserOptions) []ParsedComponen
 	if options.Language != "" {
 		cLanguage := C.CString(options.Language)
 		defer C.free(unsafe.Pointer(cLanguage))
-
 		cOptions.language = cLanguage
 	}
 
 	if options.Country != "" {
 		cCountry := C.CString(options.Country)
 		defer C.free(unsafe.Pointer(cCountry))
-
 		cOptions.country = cCountry
 	}
 
@@ -98,5 +96,5 @@ func ParseAddressOptions(address string, options ParserOptions) []ParsedComponen
 }
 
 func ParseAddress(address string) []ParsedComponent {
-	return ParseAddressOptions(address, parserDefaultOptions)
+	return ParseAddressOptions(address, DefaultParserOptions)
 }
