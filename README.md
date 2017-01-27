@@ -12,16 +12,21 @@ To expand address strings into normalized forms suitable for geocoder queries:
 package main
 
 import (
-    "fmt"
-    expand "github.com/openvenues/gopostal/expand"
+	"fmt"
+	expand "github.com/openvenues/gopostal/expand"
 )
 
 func main() {
-    expansions := expand.ExpandAddress("Quatre-vingt-douze Ave des Ave des Champs-Élysées")
+	// Initialize address expander (will load data in-memory)
+	if err := expand.Setup(); err != nil {
+		panic(err)
+	}
 
-    for i := 0; i < len(expansions); i++ {
-        fmt.Println(expansions[i])
-    }
+	expansions := expand.ExpandAddress("Quatre-vingt-douze Ave des Ave des Champs-Élysées")
+	
+	for i := 0; i < len(expansions); i++ {
+		fmt.Println(expansions[i])
+	}
 }
 ```
 
@@ -31,13 +36,18 @@ To parse addresses into components:
 package main
 
 import (
-    "fmt"
-    parser "github.com/openvenues/gopostal/parser"
+	"fmt"
+	parser "github.com/openvenues/gopostal/parser"
 )
 
 func main() {
-    parsed := parser.ParseAddress("781 Franklin Ave Crown Heights Brooklyn NY 11216 USA")
-    fmt.Println(parsed)
+	// Initialize address parser (will load data in-memory)
+	if err := parser.Setup(); err != nil {
+		panic(err)
+	}
+
+	parsed := parser.ParseAddress("781 Franklin Ave Crown Heights Brooklyn NY 11216 USA")
+	fmt.Println(parsed)
 }
 ```
 
