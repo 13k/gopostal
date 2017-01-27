@@ -8,16 +8,10 @@ package postal
 import "C"
 
 import (
-	"log"
+	"errors"
 	"unicode/utf8"
 	"unsafe"
 )
-
-func init() {
-	if !bool(C.libpostal_setup()) || !bool(C.libpostal_setup_language_classifier()) {
-		log.Fatal("Could not load libpostal")
-	}
-}
 
 const (
 	AddressAny          = C.ADDRESS_ANY
@@ -35,6 +29,40 @@ const (
 	AddressNeighborhood = C.ADDRESS_NEIGHBORHOOD
 	AddressAll          = C.ADDRESS_ALL
 )
+
+var (
+	cDefaultOptions = C.get_libpostal_default_options()
+
+	DefaultExpansionOptions = ExpandOptions{
+		Languages:              nil,
+		AddressComponents:      uint16(cDefaultOptions.address_components),
+		LatinAscii:             bool(cDefaultOptions.latin_ascii),
+		Transliterate:          bool(cDefaultOptions.transliterate),
+		StripAccents:           bool(cDefaultOptions.strip_accents),
+		Decompose:              bool(cDefaultOptions.decompose),
+		Lowercase:              bool(cDefaultOptions.lowercase),
+		TrimString:             bool(cDefaultOptions.trim_string),
+		ReplaceWordHyphens:     bool(cDefaultOptions.replace_word_hyphens),
+		DeleteWordHyphens:      bool(cDefaultOptions.delete_word_hyphens),
+		ReplaceNumericHyphens:  bool(cDefaultOptions.replace_numeric_hyphens),
+		DeleteNumericHyphens:   bool(cDefaultOptions.delete_numeric_hyphens),
+		SplitAlphaFromNumeric:  bool(cDefaultOptions.split_alpha_from_numeric),
+		DeleteFinalPeriods:     bool(cDefaultOptions.delete_final_periods),
+		DeleteAcronymPeriods:   bool(cDefaultOptions.delete_acronym_periods),
+		DropEnglishPossessives: bool(cDefaultOptions.drop_english_possessives),
+		DeleteApostrophes:      bool(cDefaultOptions.delete_apostrophes),
+		ExpandNumex:            bool(cDefaultOptions.expand_numex),
+		RomanNumerals:          bool(cDefaultOptions.roman_numerals),
+	}
+)
+
+func Setup() error {
+	if !bool(C.libpostal_setup()) || !bool(C.libpostal_setup_language_classifier()) {
+		return errors.New("Could not load libpostal")
+	}
+
+	return nil
+}
 
 type ExpandOptions struct {
 	Languages              []string
@@ -57,34 +85,6 @@ type ExpandOptions struct {
 	ExpandNumex            bool
 	RomanNumerals          bool
 }
-
-var cDefaultOptions = C.get_libpostal_default_options()
-
-func getDefaultExpansionOptions() ExpandOptions {
-	return ExpandOptions{
-		Languages:              nil,
-		AddressComponents:      uint16(cDefaultOptions.address_components),
-		LatinAscii:             bool(cDefaultOptions.latin_ascii),
-		Transliterate:          bool(cDefaultOptions.transliterate),
-		StripAccents:           bool(cDefaultOptions.strip_accents),
-		Decompose:              bool(cDefaultOptions.decompose),
-		Lowercase:              bool(cDefaultOptions.lowercase),
-		TrimString:             bool(cDefaultOptions.trim_string),
-		ReplaceWordHyphens:     bool(cDefaultOptions.replace_word_hyphens),
-		DeleteWordHyphens:      bool(cDefaultOptions.delete_word_hyphens),
-		ReplaceNumericHyphens:  bool(cDefaultOptions.replace_numeric_hyphens),
-		DeleteNumericHyphens:   bool(cDefaultOptions.delete_numeric_hyphens),
-		SplitAlphaFromNumeric:  bool(cDefaultOptions.split_alpha_from_numeric),
-		DeleteFinalPeriods:     bool(cDefaultOptions.delete_final_periods),
-		DeleteAcronymPeriods:   bool(cDefaultOptions.delete_acronym_periods),
-		DropEnglishPossessives: bool(cDefaultOptions.drop_english_possessives),
-		DeleteApostrophes:      bool(cDefaultOptions.delete_apostrophes),
-		ExpandNumex:            bool(cDefaultOptions.expand_numex),
-		RomanNumerals:          bool(cDefaultOptions.roman_numerals),
-	}
-}
-
-var libpostalDefaultOptions = getDefaultExpansionOptions()
 
 func ExpandAddressOptions(address string, options ExpandOptions) []string {
 	if !utf8.ValidString(address) {
@@ -135,14 +135,10 @@ func ExpandAddressOptions(address string, options ExpandOptions) []string {
 	cOptions.expand_numex = C.bool(options.ExpandNumex)
 	cOptions.roman_numerals = C.bool(options.RomanNumerals)
 
-	var cNumExpansions = C.size_t(0)
-
+	cNumExpansions := C.size_t(0)
 	cExpansions := C.expand_address(cAddress, cOptions, &cNumExpansions)
-
 	numExpansions := uint64(cNumExpansions)
-
-	var expansions = make([]string, numExpansions)
-
+	expansions := make([]string, numExpansions)
 	// Accessing a C array
 	cExpansionsPtr := (*[1 << 30](*C.char))(unsafe.Pointer(cExpansions))
 
@@ -155,5 +151,5 @@ func ExpandAddressOptions(address string, options ExpandOptions) []string {
 }
 
 func ExpandAddress(address string) []string {
-	return ExpandAddressOptions(address, libpostalDefaultOptions)
+	return ExpandAddressOptions(address, DefaultExpansionOptions)
 }
