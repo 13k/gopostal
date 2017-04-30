@@ -14,24 +14,25 @@ import (
 )
 
 const (
-	AddressAny          = C.ADDRESS_ANY
-	AddressName         = C.ADDRESS_NAME
-	AddressHouseNumber  = C.ADDRESS_HOUSE_NUMBER
-	AddressStreet       = C.ADDRESS_STREET
-	AddressUnit         = C.ADDRESS_UNIT
-	AddressLocality     = C.ADDRESS_LOCALITY
-	AddressAdmin1       = C.ADDRESS_ADMIN1
-	AddressAdmin2       = C.ADDRESS_ADMIN2
-	AddressAdmin3       = C.ADDRESS_ADMIN3
-	AddressAdmin4       = C.ADDRESS_ADMIN4
-	AddressAdminOther   = C.ADDRESS_ADMIN_OTHER
-	AddressCountry      = C.ADDRESS_COUNTRY
-	AddressNeighborhood = C.ADDRESS_NEIGHBORHOOD
-	AddressAll          = C.ADDRESS_ALL
+	AddressNone        = C.LIBPOSTAL_ADDRESS_NONE
+	AddressAny         = C.LIBPOSTAL_ADDRESS_ANY
+	AddressName        = C.LIBPOSTAL_ADDRESS_NAME
+	AddressHouseNumber = C.LIBPOSTAL_ADDRESS_HOUSE_NUMBER
+	AddressStreet      = C.LIBPOSTAL_ADDRESS_STREET
+	AddressUnit        = C.LIBPOSTAL_ADDRESS_UNIT
+	AddressLevel       = C.LIBPOSTAL_ADDRESS_LEVEL
+	AddressStaircase   = C.LIBPOSTAL_ADDRESS_STAIRCASE
+	AddressEntrance    = C.LIBPOSTAL_ADDRESS_ENTRANCE
+	AddressCategory    = C.LIBPOSTAL_ADDRESS_CATEGORY
+	AddressNear        = C.LIBPOSTAL_ADDRESS_NEAR
+	AddressToponym     = C.LIBPOSTAL_ADDRESS_TOPONYM
+	AddressPostalCode  = C.LIBPOSTAL_ADDRESS_POSTAL_CODE
+	AddressPoBox       = C.LIBPOSTAL_ADDRESS_PO_BOX
+	AddressAll         = C.LIBPOSTAL_ADDRESS_ALL
 )
 
 var (
-	cDefaultOptions = C.get_libpostal_default_options()
+	cDefaultOptions = C.libpostal_get_default_options()
 
 	DefaultExpansionOptions = ExpandOptions{
 		Languages:              nil,
@@ -97,7 +98,7 @@ func ExpandAddressOptions(address string, options ExpandOptions) []string {
 	var char_ptr *C.char
 	ptr_size := unsafe.Sizeof(char_ptr)
 
-	cOptions := C.get_libpostal_default_options()
+	cOptions := C.libpostal_get_default_options()
 	if options.Languages != nil {
 		cLanguages := C.calloc(C.size_t(len(options.Languages)), C.size_t(ptr_size))
 		cLanguagesPtr := (*[1 << 30](*C.char))(unsafe.Pointer(cLanguages))
@@ -111,7 +112,7 @@ func ExpandAddressOptions(address string, options ExpandOptions) []string {
 		}
 
 		cOptions.languages = (**C.char)(cLanguages)
-		cOptions.num_languages = C.int(len(options.Languages))
+		cOptions.num_languages = C.size_t(len(options.Languages))
 	} else {
 		cOptions.num_languages = 0
 	}
@@ -135,10 +136,14 @@ func ExpandAddressOptions(address string, options ExpandOptions) []string {
 	cOptions.expand_numex = C.bool(options.ExpandNumex)
 	cOptions.roman_numerals = C.bool(options.RomanNumerals)
 
-	cNumExpansions := C.size_t(0)
-	cExpansions := C.expand_address(cAddress, cOptions, &cNumExpansions)
+	var cNumExpansions = C.size_t(0)
+
+	cExpansions := C.libpostal_expand_address(cAddress, cOptions, &cNumExpansions)
+
 	numExpansions := uint64(cNumExpansions)
-	expansions := make([]string, numExpansions)
+
+	var expansions = make([]string, numExpansions)
+
 	// Accessing a C array
 	cExpansionsPtr := (*[1 << 30](*C.char))(unsafe.Pointer(cExpansions))
 

@@ -49,7 +49,7 @@ func ParseAddressOptions(address string, options ParserOptions) []ParsedComponen
 	//var b *C.char
 	//ptr_size := unsafe.Sizeof(b)
 
-	cOptions := C.get_libpostal_address_parser_default_options()
+	cOptions := C.libpostal_get_address_parser_default_options()
 	if options.Language != "" {
 		cLanguage := C.CString(options.Language)
 		defer C.free(unsafe.Pointer(cLanguage))
@@ -62,7 +62,7 @@ func ParseAddressOptions(address string, options ParserOptions) []ParsedComponen
 		cOptions.country = cCountry
 	}
 
-	cAddressParserResponsePtr := C.parse_address(cAddress, cOptions)
+	cAddressParserResponsePtr := C.libpostal_parse_address(cAddress, cOptions)
 
 	if cAddressParserResponsePtr == nil {
 		return nil
@@ -90,7 +90,7 @@ func ParseAddressOptions(address string, options ParserOptions) []ParsedComponen
 		}
 	}
 
-	C.address_parser_response_destroy(cAddressParserResponsePtr)
+	C.libpostal_address_parser_response_destroy(cAddressParserResponsePtr)
 
 	return parsedComponents
 }
